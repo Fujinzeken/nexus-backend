@@ -42,7 +42,23 @@ export class QueueService {
 
     console.log(`[Queue] Scheduling post ${postId} with delay: ${delay}ms`);
 
-    return await this.queue.add("dispatch-post", { postId }, { delay });
+    // Use postId as jobId to easily replace/remove
+    return await this.queue.add(
+      "dispatch-post",
+      { postId },
+      { delay, jobId: postId },
+    );
+  }
+
+  /**
+   * Cancel a scheduled post
+   */
+  static async cancelPost(postId: string) {
+    const job = await this.queue.getJob(postId);
+    if (job) {
+      await job.remove();
+      console.log(`[Queue] Cancelled job for post ${postId}`);
+    }
   }
 
   /**
@@ -56,7 +72,12 @@ export class QueueService {
         console.log(`[Worker] Processing post: ${postId}`);
         return await PostingService.sendPost(postId);
       },
-      { connection: redisConnection },
+      {
+        connection: redisConnection,
+        stalledInterval: 600000, // Check for stalled jobs every 10 mins
+        lockDuration: 300000, // Renew lock every 5 mins
+        drainDelay: 60, // Wait 60s when queue is empty before polling again
+      },
     );
 
     worker.on("completed", (job) => {
