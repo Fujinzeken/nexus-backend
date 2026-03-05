@@ -6,6 +6,7 @@
     "build": "tsc",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "start": "node dist/index.js",
+    "resync-queue": "ts-node src/scripts/resync-queue.ts",
     "lint": "eslint . --ext .ts"
   },
   "dependencies": {
