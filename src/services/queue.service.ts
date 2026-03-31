@@ -74,9 +74,10 @@ export class QueueService {
       },
       {
         connection: redisConnection,
-        stalledInterval: 600000, // Check for stalled jobs every 10 mins
-        lockDuration: 300000, // Renew lock every 5 mins
-        drainDelay: 300, // Wait 5 mins when queue is empty before polling again
+        stalledInterval: 600000,
+        lockDuration: 300000,
+        drainDelay: 10, // Check every 10s (Safe on local Redis)
+        concurrency: 5, // Limit to 5 simultaneous posts to save CPU/RAM
       },
     );
 
