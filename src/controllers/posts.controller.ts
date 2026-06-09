@@ -7,7 +7,7 @@ import { AuthRequest } from "../middleware/auth.middleware";
 const createPostSchema = z.object({
   content: z.string().min(1, "Content is required"),
   platform: z.enum(["twitter", "linkedin"]),
-  scheduledAt: z.string().optional(), // ISO string
+  scheduledAt: z.string().nullable().optional(), // ISO string; null clears the schedule
   mediaUrls: z.array(z.string()).optional(),
 });
 
@@ -163,8 +163,7 @@ export const updatePost = async (req: AuthRequest, res: Response) => {
         content: content ?? existingPost.content,
         platform: platform ?? existingPost.platform,
         scheduled_at:
-          scheduledAt ??
-          (scheduledAt === null ? null : existingPost.scheduled_at),
+          scheduledAt !== undefined ? scheduledAt : existingPost.scheduled_at,
         status: isScheduled
           ? "scheduled"
           : scheduledAt === null
