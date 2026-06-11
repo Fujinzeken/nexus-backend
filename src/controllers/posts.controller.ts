@@ -183,7 +183,7 @@ export const updatePost = async (req: AuthRequest, res: Response) => {
     // 3. Sync with Queue
     const { QueueService } = await import("../services/queue.service");
     if (isScheduled) {
-      // Re-schedule (this overwrites the existing job by ID)
+      // Re-schedule (schedulePost removes any prior job for this id, then re-adds)
       await QueueService.schedulePost(id, scheduledAt!);
     } else if (scheduledAt === null) {
       // Specifically cancelled scheduling

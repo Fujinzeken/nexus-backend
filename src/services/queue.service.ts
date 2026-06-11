@@ -40,9 +40,23 @@ export class QueueService {
       delay = Math.max(0, scheduledTime - now);
     }
 
+    // BullMQ's add() silently no-ops if a job with this jobId already exists in
+    // ANY state — including a previously failed/completed job left behind by
+    // removeOnFail:false. Since reschedules reuse postId as the jobId, we must
+    // remove the old job first, or the new schedule is dropped on the floor and
+    // the post never fires (while the DB still says "scheduled").
+    try {
+      const existing = await this.queue.getJob(postId);
+      if (existing) {
+        await existing.remove();
+      }
+    } catch (err) {
+      console.warn(`[Queue] Could not remove existing job ${postId}:`, err);
+    }
+
     console.log(`[Queue] Scheduling post ${postId} with delay: ${delay}ms`);
 
-    // Use postId as jobId to easily replace/remove
+    // Use postId as jobId so a future reschedule can find and replace this job
     return await this.queue.add(
       "dispatch-post",
       { postId },
