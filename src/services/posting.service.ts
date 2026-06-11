@@ -109,7 +109,7 @@ export class PostingService {
     try {
       // 1. Check if token needs refresh
       let currentToken = account.access_token;
-      const expiresAt = new Date(account.token_expires_at).getTime();
+      const expiresAt = new Date(account.expires_at).getTime();
       const BUFFER = 5 * 60 * 1000; // 5 minutes buffer
 
       if (Date.now() + BUFFER > expiresAt && account.refresh_token) {
@@ -194,6 +194,16 @@ export class PostingService {
           .eq("id", account.id);
 
         currentToken = access_token;
+      }
+
+      // LinkedIn only issues refresh tokens to apps enrolled in programmatic
+      // refresh tokens. This app isn't, so once the 60-day access token expires
+      // there's nothing to refresh — fail fast with a clear, actionable message
+      // instead of a cryptic 401 from the upload/post calls below.
+      if (Date.now() + BUFFER > expiresAt && !account.refresh_token) {
+        throw new Error(
+          "LinkedIn access token expired. Please reconnect your LinkedIn account in Settings.",
+        );
       }
 
       // 2. Handle Media Uploads if any
